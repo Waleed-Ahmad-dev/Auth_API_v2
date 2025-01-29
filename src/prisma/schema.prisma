@@ -1,0 +1,78 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  TEACHER
+  STUDENT
+  MEMBER
+}
+
+// Models
+model User {
+  id                   Int            @id @default(autoincrement())
+  email                String         @unique
+  password             String
+  name                 String
+  provider             String?
+  providerId           String?
+  isConfirmed          Boolean        @default(false)
+  confirmationToken    String?
+  confirmationExpires  DateTime?
+  resetPasswordToken   String?
+  resetPasswordExpires DateTime?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  ActivityLog          ActivityLog[]
+  RefreshToken         RefreshToken[]
+  Notification         Notification[]
+}
+model ActivityLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String
+  details   String? // Optional field for extra details about the action
+  timestamp DateTime @default(now())
+}
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  @@index([userId]) // Optimize filtering tokens by user
+}
+
+model Notification {
+  id      Int      @id @default(autoincrement())
+  userId  Int
+  type    String // Type of notification (e.g., "email", "SMS", "app")
+  data    Json // Task metadata or other relevant details
+  isRead  Boolean  @default(false) // Whether the user has viewed the notification
+  message String
+  sentAt  DateTime @default(now()) // Optional, to associate notifications with a task
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId]) // Optimize notification queries by user
+}
